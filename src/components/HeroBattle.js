@@ -129,27 +129,19 @@ const DamageBar = styled.div`
 
 const HeroBattle = () => {
   const [toast, setToast] = useState('');
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('damage'); // 'damage' or 'input'
+  // 直接使用静态成绩数据
+  const [students] = useState([
+    { name: '王敏', score: 100 },
+    { name: '梓超', score: 90 },
+    { name: '小明', score: 30 },
+    { name: '汪涵', score: 45 },
+    { name: '鹿晗', score: 60 }
+  ]);
+  const [loading] = useState(false);
+  const [tab] = useState('damage'); // 只保留damage展示Tab
   const bossHp = 1000;
 
-  // 获取成绩数据
-  const fetchScores = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('http://192.168.0.194:3001/scores');
-      const data = await res.json();
-      setStudents(data);
-    } catch {
-      setStudents([]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchScores();
-  }, []);
+  // 已禁用fetchScores和useEffect，数据静态写死
 
   const handleTabChange = (tabName) => setTab(tabName);
 
@@ -181,8 +173,9 @@ const HeroBattle = () => {
         </div>
       </BossSection>
 
-      <TabSwitcher activeTab={tab} onTabChange={handleTabChange} />
+      {/* <TabSwitcher activeTab={tab} onTabChange={handleTabChange} /> */}
       <div style={{minHeight: 'calc(100vh - 220px)', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingBottom: 16}}>
+        {/* 只保留成绩展示，不显示录入成绩Tab */}
         {tab === 'damage' && (
           loading ? <div style={{textAlign:'center'}}>加载中...</div> : (
             <>
@@ -249,32 +242,10 @@ const HeroBattle = () => {
             </>
           )
         )}
-        {tab === 'input' && (
-          <ScoreInput
-            onSubmit={handleSubmit}
-            scores={students}
-            onEdit={async (idx, newStu) => {
-              // 编辑直接调用后端POST覆盖
-              await fetch('http://192.168.0.194:3001/scores', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStu)
-              });
-              await fetchScores();
-            }}
-            onDelete={async (idx) => {
-              // 删除调用后端DELETE，传递name和score
-              const { name, score } = students[idx];
-              const res = await fetch(`http://192.168.0.194:3001/scores?name=${encodeURIComponent(name)}&score=${encodeURIComponent(score)}`, { method: 'DELETE' });
-              if (res.ok) {
-                await fetchScores();
-                setToast('删除成功');
-              } else {
-                setToast('删除失败');
-              }
-            }}
-          />
-        )}
+        {/* 录入成绩模块已被注释，不再显示成绩录入表单 */}
+        {/* {tab === 'input' && (
+          <ScoreInput ... />
+        )} */}
       </div>
       <Toast message={toast} onClose={() => setToast('')} />
     </div>
