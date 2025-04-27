@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 const DATA_FILE = path.join(__dirname, 'scores.json');
 
 app.use(cors());
@@ -63,7 +63,14 @@ app.delete('/scores', (req, res) => {
   res.json({ success: true });
 });
 
-// 启动服务器
+// 静态托管前端 build 目录
+app.use(express.static(path.join(__dirname, '../build')));
+// SPA 兜底路由，所有未知路由返回 index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../build/index.html'));
+});
+
+// 启动服务
 app.listen(PORT, () => {
-  console.log(`成绩后端服务已启动: http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
