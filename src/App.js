@@ -6,7 +6,7 @@ const GlobalStyle = createGlobalStyle`
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Comic Sans MS', 'Arial', sans-serif;
+    font-family: 'Source Han Sans SC', 'Source Han Sans CN', '思源黑体', 'Noto Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', 'Arial', sans-serif;
     background: #f2f7fc;
   }
 `;
@@ -23,7 +23,7 @@ function App() {
   return (
     <AppWrapper>
       <GlobalStyle />
-      <h1>班级勇士打BOSS成绩榜</h1>
+      <h1>🐉龙王BOSS挑战赛！</h1>
       <HeroBattle />
     </AppWrapper>
   );

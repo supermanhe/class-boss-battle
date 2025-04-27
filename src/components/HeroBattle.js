@@ -1,23 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import ScoreInput from './ScoreInput';
+import TabSwitcher from './TabSwitcher';
+import Toast from './Toast';
 import styled from 'styled-components';
 
-// 虚拟成绩数据
-const students = [
-  { name: '小明', score: 98 },
-  { name: '小红', score: 95 },
-  { name: '小刚', score: 92 },
-  { name: '小丽', score: 85 },
-  { name: '小强', score: 80 },
-  { name: '小芳', score: 78 },
-  { name: '小军', score: 70 },
-  { name: '小雪', score: 68 },
-  { name: '小鹏', score: 60 },
-  { name: '小慧', score: 55 }
-];
-
-const sortedStudents = [...students].sort((a, b) => b.score - a.score);
 const bossHp = 1000;
-const totalScore = sortedStudents.reduce((sum, s) => sum + s.score, 0);
 
 const HeroRow = styled.div`
   display: flex;
@@ -141,7 +128,42 @@ const DamageBar = styled.div`
 `;
 
 const HeroBattle = () => {
-  // 计算BOSS剩余血量
+  const [toast, setToast] = useState('');
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('damage'); // 'damage' or 'input'
+  const bossHp = 1000;
+
+  // 获取成绩数据
+  const fetchScores = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('http://192.168.0.194:3001/scores');
+      const data = await res.json();
+      setStudents(data);
+    } catch {
+      setStudents([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchScores();
+  }, []);
+
+  const handleTabChange = (tabName) => setTab(tabName);
+
+  const handleSubmit = async ({ name, score }) => {
+    await fetch('http://192.168.0.194:3001/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score })
+    });
+    await fetchScores();
+  };
+
+  const sortedStudents = [...students].sort((a, b) => b.score - a.score);
+  const totalScore = sortedStudents.reduce((sum, s) => sum + s.score, 0);
   const bossLeft = Math.max(0, bossHp - totalScore);
   const bossPercent = Math.max(0, 100 - (totalScore / bossHp) * 100);
 
@@ -149,33 +171,112 @@ const HeroBattle = () => {
     <div style={{width: '100%', maxWidth: 600}}>
       <BossSection>
         <BossImg />
-        <BossHpBar>
-          <BossHp percent={bossPercent} />
-        </BossHpBar>
-        <div>龙BOSS 剩余HP: {bossLeft} / {bossHp}</div>
+        <div style={{position: 'relative', width: '320px', maxWidth: '98vw', margin: '0 auto 0.3rem auto', overflow: 'visible'}}>
+          <BossHpBar style={{position: 'relative', zIndex: 1, width: '100%'}}>
+            <BossHp percent={bossPercent} />
+          </BossHpBar>
+          <div style={{position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#222', fontSize: 18, pointerEvents: 'none', zIndex: 2}}>
+            {bossLeft} / {bossHp}
+          </div>
+        </div>
       </BossSection>
 
-      <HeroRow>
-        {sortedStudents.map((stu, idx) => (
-          <HeroCard key={stu.name} rank={idx+1 <= 3 ? idx+1 : undefined}>
-            {idx < 3 && <RankBadge rank={idx+1}>{idx+1}</RankBadge>}
-            <HeroImg />
-            <div style={{fontWeight: 'bold'}}>{stu.name}</div>
-            <div style={{color: '#ff7043', fontWeight: 'bold'}}>{stu.score}分</div>
-          </HeroCard>
-        ))}
-      </HeroRow>
+      <TabSwitcher activeTab={tab} onTabChange={handleTabChange} />
+      <div style={{minHeight: 'calc(100vh - 220px)', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingBottom: 16}}>
+        {tab === 'damage' && (
+          loading ? <div style={{textAlign:'center'}}>加载中...</div> : (
+            <>
+              {/* 只显示前三名，并特殊布局突出第一名 */}
+              <HeroRow style={{justifyContent: 'center', alignItems: 'flex-end', minHeight: 160, paddingTop: 32, overflow: 'visible'}}>
+                {sortedStudents.slice(0, 3).length === 1 && (
+                  <HeroCard style={{margin: '0 1rem'}} rank={1}>
+                    <RankBadge rank={1}>1</RankBadge>
+                    <HeroImg />
+                    <div style={{fontWeight: 'bold'}}>{sortedStudents[0].name}</div>
+                    <div style={{color: '#ff7043', fontWeight: 'bold'}}>{sortedStudents[0].score}分</div>
+                  </HeroCard>
+                )}
+                {sortedStudents.slice(0, 3).length === 2 && (
+                  <>
+                    <HeroCard style={{margin: '0 1rem'}} rank={1}>
+                      <RankBadge rank={1}>1</RankBadge>
+                      <HeroImg />
+                      <div style={{fontWeight: 'bold'}}>{sortedStudents[0].name}</div>
+                      <div style={{color: '#ff7043', fontWeight: 'bold'}}>{sortedStudents[0].score}分</div>
+                    </HeroCard>
+                    <HeroCard style={{margin: '0 1rem'}} rank={2}>
+                      <RankBadge rank={2}>2</RankBadge>
+                      <HeroImg />
+                      <div style={{fontWeight: 'bold'}}>{sortedStudents[1].name}</div>
+                      <div style={{color: '#ff7043', fontWeight: 'bold'}}>{sortedStudents[1].score}分</div>
+                    </HeroCard>
+                  </>
+                )}
+                {sortedStudents.slice(0, 3).length === 3 && (
+                  <>
+                    <HeroCard style={{margin: '0 1rem 16px 1rem', transform: 'translateY(20px)', zIndex: 1}} rank={2}>
+                      <RankBadge rank={2}>2</RankBadge>
+                      <HeroImg />
+                      <div style={{fontWeight: 'bold'}}>{sortedStudents[1].name}</div>
+                      <div style={{color: '#ff7043', fontWeight: 'bold'}}>{sortedStudents[1].score}分</div>
+                    </HeroCard>
+                    <HeroCard style={{margin: '0 1rem', transform: 'translateY(-20px) scale(1.15)', boxShadow: '0 4px 16px rgba(255,112,67,0.18)', zIndex: 2, borderWidth: 4}} rank={1}>
+                      <RankBadge rank={1}>1</RankBadge>
+                      <HeroImg />
+                      <div style={{fontWeight: 'bold', fontSize: 18}}>{sortedStudents[0].name}</div>
+                      <div style={{color: '#ff7043', fontWeight: 'bold', fontSize: 18}}>{sortedStudents[0].score}分</div>
+                    </HeroCard>
+                    <HeroCard style={{margin: '0 1rem 16px 1rem', transform: 'translateY(20px)', zIndex: 1}} rank={3}>
+                      <RankBadge rank={3}>3</RankBadge>
+                      <HeroImg />
+                      <div style={{fontWeight: 'bold'}}>{sortedStudents[2].name}</div>
+                      <div style={{color: '#ff7043', fontWeight: 'bold'}}>{sortedStudents[2].score}分</div>
+                    </HeroCard>
+                  </>
+                )}
+              </HeroRow>
 
-      <h3 style={{textAlign: 'center'}}>勇士们的伤害贡献排名</h3>
-      <DamageList>
-        {sortedStudents.map((stu, idx) => (
-          <DamageRow key={stu.name}>
-            <span style={{width: 50, display: 'inline-block'}}>{stu.name}</span>
-            <span style={{width: 40, color: '#ff7043', fontWeight: idx<3?'bold':'normal'}}>{stu.score}</span>
-            <DamageBar style={{width: `${(stu.score/Math.max(...sortedStudents.map(s=>s.score)))*80}%`}} />
-          </DamageRow>
-        ))}
-      </DamageList>
+              <h3 style={{textAlign: 'center'}}>勇士们的伤害贡献排名</h3>
+              <DamageList>
+                {sortedStudents.map((stu, idx) => (
+                  <DamageRow key={stu.name}>
+                    <span style={{width: 50, display: 'inline-block'}}>{stu.name}</span>
+                    <span style={{width: 40, color: '#ff7043', fontWeight: idx<3?'bold':'normal'}}>{stu.score}</span>
+                    <DamageBar style={{width: `${(stu.score/Math.max(...sortedStudents.map(s=>s.score)))*80}%`}} />
+                  </DamageRow>
+                ))}
+              </DamageList>
+            </>
+          )
+        )}
+        {tab === 'input' && (
+          <ScoreInput
+            onSubmit={handleSubmit}
+            scores={students}
+            onEdit={async (idx, newStu) => {
+              // 编辑直接调用后端POST覆盖
+              await fetch('http://192.168.0.194:3001/scores', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newStu)
+              });
+              await fetchScores();
+            }}
+            onDelete={async (idx) => {
+              // 删除调用后端DELETE，传递name和score
+              const { name, score } = students[idx];
+              const res = await fetch(`http://192.168.0.194:3001/scores?name=${encodeURIComponent(name)}&score=${encodeURIComponent(score)}`, { method: 'DELETE' });
+              if (res.ok) {
+                await fetchScores();
+                setToast('删除成功');
+              } else {
+                setToast('删除失败');
+              }
+            }}
+          />
+        )}
+      </div>
+      <Toast message={toast} onClose={() => setToast('')} />
     </div>
   );
 };
