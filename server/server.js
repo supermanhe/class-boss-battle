@@ -66,7 +66,7 @@ app.delete('/scores', (req, res) => {
 // 静态托管前端 build 目录
 app.use(express.static(path.join(__dirname, '../build')));
 // SPA 兜底路由，所有未知路由返回 index.html
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../build/index.html'));
 });
 
