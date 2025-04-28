@@ -138,10 +138,11 @@ const HeroBattle = () => {
   const fetchScores = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://192.168.0.194:3001/scores');
+      const res = await fetch('/scores');
       const data = await res.json();
       setStudents(data);
-    } catch {
+    } catch (err) {
+      console.error('Error fetching scores:', err);
       setStudents([]);
     }
     setLoading(false);
@@ -154,11 +155,15 @@ const HeroBattle = () => {
   const handleTabChange = (tabName) => setTab(tabName);
 
   const handleSubmit = async ({ name, score }) => {
-    await fetch('http://192.168.0.194:3001/scores', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score })
-    });
+    try {
+      await fetch('/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, score })
+      });
+    } catch (err) {
+      console.error('Error submitting score:', err);
+    }
     await fetchScores();
   };
 
@@ -255,21 +260,32 @@ const HeroBattle = () => {
             scores={students}
             onEdit={async (idx, newStu) => {
               // 编辑直接调用后端POST覆盖
-              await fetch('http://192.168.0.194:3001/scores', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStu)
-              });
-              await fetchScores();
+              try {
+                await fetch('/scores', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(newStu)
+                });
+                await fetchScores();
+              } catch (err) {
+                console.error('Error editing score:', err);
+                setToast('编辑失败');
+              }
             }}
             onDelete={async (idx) => {
               // 删除调用后端DELETE，传递name和score
-              const { name, score } = students[idx];
-              const res = await fetch(`http://192.168.0.194:3001/scores?name=${encodeURIComponent(name)}&score=${encodeURIComponent(score)}`, { method: 'DELETE' });
-              if (res.ok) {
-                await fetchScores();
-                setToast('删除成功');
-              } else {
+              try {
+                const { name, score } = students[idx];
+                const res = await fetch(`/scores?name=${encodeURIComponent(name)}&score=${encodeURIComponent(score)}`, { method: 'DELETE' });
+                if (res.ok) {
+                  await fetchScores();
+                  setToast('删除成功');
+                } else {
+                  console.error('Delete failed with status:', res.status);
+                  setToast('删除失败');
+                }
+              } catch (err) {
+                console.error('Error deleting score:', err);
                 setToast('删除失败');
               }
             }}
