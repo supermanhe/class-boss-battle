@@ -18,16 +18,55 @@ let db;
 if (isProduction) {
   console.log('使用MySQL数据库 (生产环境)');
   const mysql = require('mysql2/promise');
-  const mysqlUrl = process.env.MYSQL_URL || 'mysql://root:password@mysql.railway.internal:3306/railway';
-  console.log('尝试连接到MySQL, URL样式:', mysqlUrl.replace(/:[^:@]+@/, ':****@'));
   
-  try {
-    db = mysql.createPool({
-      uri: mysqlUrl,
+  // 检查所有可用的环境变量
+  console.log('环境变量列表:');
+  for (const key in process.env) {
+    if (key.includes('MYSQL') || key.includes('DATABASE') || key.includes('DB_')) {
+      console.log(`${key}: ${key.includes('PASSWORD') ? '****' : process.env[key]}`);
+    }
+  }
+  
+  // 尝试多种连接方式
+  let mysqlConfig;
+  
+  // 优先使用完整的连接字符串
+  if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+    const connectionString = process.env.MYSQL_URL || process.env.DATABASE_URL;
+    console.log('使用连接字符串方式:', connectionString.replace(/:[^:@]+@/, ':****@'));
+    mysqlConfig = { uri: connectionString };
+  } 
+  // 如果没有连接字符串，尝试使用单独的参数
+  else if (process.env.MYSQLHOST || process.env.DB_HOST) {
+    const host = process.env.MYSQLHOST || process.env.DB_HOST || 'localhost';
+    const port = process.env.MYSQLPORT || process.env.DB_PORT || 3306;
+    const user = process.env.MYSQLUSER || process.env.DB_USER || 'root';
+    const password = process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || '';
+    const database = process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway';
+    
+    console.log(`使用参数方式连接: ${user}@${host}:${port}/${database}`);
+    
+    mysqlConfig = {
+      host,
+      port,
+      user,
+      password,
+      database,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
-    });
+    };
+  } 
+  // 使用默认值作为备用
+  else {
+    console.log('没有找到MySQL连接信息，使用默认连接信息');
+    mysqlConfig = {
+      uri: 'mysql://root:ddkQHENgflNChsQOfNjvPcPcyCaeHRNO@mysql.railway.internal:3306/railway'
+    };
+  }
+  
+  try {
+    db = mysql.createPool(mysqlConfig);
     console.log('MySQL连接池创建成功');
   } catch (err) {
     console.error('MySQL连接池创建失败:', err);
