@@ -11,11 +11,43 @@ app.use(bodyParser.json());
 
 // 获取所有成绩
 app.get('/scores', async (req, res) => {
+  console.log('尝试获取所有成绩...');
   try {
+    // 首先检查表是否存在
+    try {
+      console.log('检查表是否存在...');
+      await pool.query('SHOW TABLES LIKE "scores"');
+      console.log('表检查完成');
+    } catch (tableErr) {
+      console.error('表检查失败:', tableErr);
+      // 如果检查失败，尝试创建表
+      try {
+        console.log('尝试创建表...');
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS scores (
+            name VARCHAR(64) PRIMARY KEY,
+            score INT
+          )
+        `);
+        console.log('表创建成功或已存在');
+      } catch (createErr) {
+        console.error('创建表失败:', createErr);
+        throw createErr; // 往上抛出错误
+      }
+    }
+    
+    // 查询数据
+    console.log('正在从数据库查询成绩...');
     const [rows] = await pool.query('SELECT name, score FROM scores');
-    res.json(rows);
+    console.log('查询成功，返回数据:', rows);
+    res.json(rows || []); // 确保始终返回数组，即使是空的
   } catch (err) {
-    res.status(500).json({ error: '数据库查询失败' });
+    console.error('数据库查询失败:', err);
+    res.status(500).json({ 
+      error: '数据库查询失败', 
+      details: err.message,
+      stack: err.stack
+    });
   }
 });
 

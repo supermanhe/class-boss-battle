@@ -136,16 +136,23 @@ const HeroBattle = () => {
 
   // 获取成绩数据
   const fetchScores = async () => {
-    setLoading(true);
     try {
-      const res = await fetch('/scores');
-      const data = await res.json();
-      setStudents(data);
-    } catch (err) {
-      console.error('Error fetching scores:', err);
+      const response = await fetch('/scores');
+      if (!response.ok) {
+        throw new Error(`服务器响应错误: ${response.status}`);
+      }
+      const data = await response.json();
+      // 确保数据是数组
+      const scoresArray = Array.isArray(data) ? data : [];
+      console.log('成功获取成绩:', scoresArray);
+      setStudents(scoresArray);
+    } catch (error) {
+      console.error('获取成绩失败:', error);
+      // 出错时设置为空数组，避免应用崩溃
       setStudents([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
