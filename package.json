@@ -4,6 +4,7 @@
   "description": "小学班级成绩统计展示网页，卡通勇士打BOSS风格，支持移动端自适应。",
   "main": "src/index.js",
   "scripts": {
+    "setup-db": "node scripts/setup-db.js",
     "heroku-postbuild": "react-scripts build",
     "start": "node server/server.js",
     "build": "react-scripts build",
@@ -11,12 +12,16 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "better-sqlite3": "^11.10.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^4.17.1",
+    "mysql2": "^3.14.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
+    "sqlite3": "^5.1.7",
     "styled-components": "^6.0.0"
   },
   "browserslist": [

@@ -3,3 +3,9 @@ build/
 .env
 .cache/
 .DS_Store
+
+# 本地数据库文件
+data/
+*.sqlite
+*.sqlite3
+*.db
