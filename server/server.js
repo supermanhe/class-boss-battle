@@ -53,18 +53,52 @@ app.get('/scores', async (req, res) => {
 
 // 新增或更新成绩
 app.post('/scores', async (req, res) => {
+  console.log('收到添加/更新成绩请求:', req.body);
   const { name, score } = req.body;
-  if (!name || typeof score !== 'number') {
-    return res.status(400).json({ error: '姓名和成绩不能为空' });
+  if (!name) {
+    console.error('验证失败: 姓名为空');
+    return res.status(400).json({ error: '姓名不能为空' });
   }
+  
+  // 确保 score 是数字
+  const scoreNum = Number(score);
+  if (isNaN(scoreNum)) {
+    console.error('验证失败: 成绩不是数字', score);
+    return res.status(400).json({ error: '成绩必须是数字' });
+  }
+  
   try {
+    // 首先确认表存在
+    try {
+      console.log('确认scores表存在...');
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS scores (
+          name VARCHAR(64) PRIMARY KEY,
+          score INT
+        )
+      `);
+      console.log('表检查/创建成功');
+    } catch (tableErr) {
+      console.error('检查/创建表失败:', tableErr);
+      throw tableErr;
+    }
+    
+    // 执行插入或更新
+    console.log('尝试插入/更新数据:', name, scoreNum);
     await pool.query(
       'INSERT INTO scores (name, score) VALUES (?, ?) ON DUPLICATE KEY UPDATE score = ?',
-      [name, score, score]
+      [name, scoreNum, scoreNum]
     );
+    
+    console.log('数据插入/更新成功');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: '数据库写入失败' });
+    console.error('数据库写入失败:', err);
+    res.status(500).json({ 
+      error: '数据库写入失败', 
+      details: err.message,
+      stack: err.stack
+    });
   }
 });
 

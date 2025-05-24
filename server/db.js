@@ -19,7 +19,20 @@ if (isProduction) {
   console.log('使用MySQL数据库 (生产环境)');
   const mysql = require('mysql2/promise');
   const mysqlUrl = process.env.MYSQL_URL || 'mysql://root:password@mysql.railway.internal:3306/railway';
-  db = mysql.createPool({ uri: mysqlUrl });
+  console.log('尝试连接到MySQL, URL样式:', mysqlUrl.replace(/:[^:@]+@/, ':****@'));
+  
+  try {
+    db = mysql.createPool({
+      uri: mysqlUrl,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+    console.log('MySQL连接池创建成功');
+  } catch (err) {
+    console.error('MySQL连接池创建失败:', err);
+    throw err;
+  }
 } else {
   console.log('使用SQLite数据库 (本地开发)');
   const sqlite = require('better-sqlite3');
