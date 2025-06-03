@@ -104,17 +104,41 @@ app.post('/scores', async (req, res) => {
 
 // 删除成绩（支持 name+score 精确删除）
 app.delete('/scores', async (req, res) => {
+  console.log('收到删除请求，参数:', req.query);
   const name = req.query.name;
-  const score = req.query.score ? Number(req.query.score) : undefined;
-  if (!name || typeof score !== 'number') return res.status(400).json({ error: '缺少参数' });
+  // 确保score是数字，同时处理score为0的情况
+  const score = req.query.score !== undefined ? Number(req.query.score) : undefined;
+  
+  // 改进参数验证
+  if (!name) {
+    console.error('删除失败: 缺少姓名参数');
+    return res.status(400).json({ error: '缺少姓名参数' });
+  }
+  
+  if (score === undefined || isNaN(score)) {
+    console.error('删除失败: 分数参数无效', req.query.score);
+    return res.status(400).json({ error: '分数参数无效' });
+  }
+  
   try {
+    console.log('执行删除操作:', name, score);
     const [result] = await pool.query('DELETE FROM scores WHERE name = ? AND score = ?', [name, score]);
+    console.log('删除操作结果:', result);
+    
     if (result.affectedRows === 0) {
+      console.error('未找到记录:', name, score);
       return res.status(404).json({ error: '未找到该学生成绩' });
     }
+    
+    console.log('删除成功');
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: '数据库删除失败' });
+    console.error('数据库删除失败:', err);
+    res.status(500).json({ 
+      error: '数据库删除失败',
+      details: err.message,
+      stack: err.stack
+    });
   }
 });
 

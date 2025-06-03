@@ -129,6 +129,17 @@ if (isProduction) {
         return [{ affectedRows: result.changes }];
       }
       
+      // 处理CREATE TABLE语句
+      if (sql.includes('CREATE TABLE IF NOT EXISTS scores')) {
+        // 将MySQL类型转换为SQLite类型
+        const sqliteSQL = sql
+          .replace('VARCHAR(64)', 'TEXT')
+          .replace('INT', 'INTEGER');
+        
+        sqliteDb.exec(sqliteSQL);
+        return [{ affectedRows: 0 }];
+      }
+      
       throw new Error(`不支持的SQL: ${sql}`);
     }
   };
